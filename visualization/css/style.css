@@ -1,0 +1,17 @@
+h1{
+    font-family: 'Montserrat', sans-serif;
+    text-align:center;
+    color: white;
+}
+
+.s1{
+    background-color: #a2dbc0;
+}
+
+.s2{
+    background-color: rgba(50, 50, 50, 1);
+}
+
+span{
+    background: white !important;
+}
