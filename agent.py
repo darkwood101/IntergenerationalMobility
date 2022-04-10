@@ -7,6 +7,7 @@ class privilege(Enum):
 
 class agent:
     a: float
+    a_dist: Callable[[], float]
     c: privilege
     sigma: float
     tau: float
@@ -20,16 +21,16 @@ class agent:
     success_prob: float
 
     # TODO: set default values of parameters
-    # TODO: pass in distribution from which to draw a
     def __init__(self,
+                 a_dist: Callable[[], float]
                  c: privilege,
                  sigma: float,
                  tau: float,
                  phi_0: float,
                  p_A: float,
                  p_D: float):
-        # TODO: set a properly
-        self.a = ...
+        self.a_dist = a_dist
+        self.a = a_dist()
         self.c = c
         
         # Assuming parameters were sanity-checked upstream
@@ -80,7 +81,8 @@ class agent:
                     if (random() <= self.p_D) and (random() <= self.phi_0) \
                     else privilege.PRIVILEGED
 
-        return agent(c=new_c,
+        return agent(a_dist=self.a_dist,
+                     c=new_c,
                      sigma=self.sigma,
                      tau=self.tau,
                      phi_0=self.phi_0,
