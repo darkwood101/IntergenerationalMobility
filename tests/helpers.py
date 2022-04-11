@@ -30,6 +30,10 @@ class helpers:
         return random.uniform(0, 1)
 
     @staticmethod
+    def n_privileged_random(N):
+        return random.randint(1, N)
+
+    @staticmethod
     def p_A_random():
         return random.uniform(0, 1)
 
