@@ -338,7 +338,7 @@ class agent_test(unittest.TestCase):
         # so nobody will be given the opportunity
         # `p_A = p_D = 0` -- children will always inherit privilege
         phi_0 = helpers.phi_0_random()
-        a = agent(a_dist = helpers.a_dist_best,
+        a = agent(a_dist = helpers.a_dist_uniform,
                   c = helpers.c_random(),
                   sigma = 0.5,
                   tau = 0.5,
@@ -359,7 +359,7 @@ class agent_test(unittest.TestCase):
         # opportunity, but nobody will succeed
         # `p_A = p_D = 0` -- children will always inherit privilege
         phi_0 = helpers.phi_0_random()
-        a = agent(a_dist = helpers.a_dist_best,
+        a = agent(a_dist = helpers.a_dist_uniform,
                   c = helpers.c_random(),
                   sigma = 0,
                   tau = 0,
