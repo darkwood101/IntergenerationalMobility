@@ -36,3 +36,7 @@ class helpers:
     @staticmethod
     def p_D_random():
         return random.uniform(0, 1)
+
+    @staticmethod
+    def N_random():
+        return random.randint(1, 1000)
