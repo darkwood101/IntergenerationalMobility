@@ -39,9 +39,49 @@ class PopulationVis {
             .domain([1, 2, 3])
             .range([50, 200, 340])
 
-    
-		console.log(vis.data)
-		// (Filter, aggregate, modify data)
+		vis.node = vis.svg.append("g")
+		.selectAll("circle")
+		.data(vis.data)
+		.enter()
+		.append("circle")
+		.merge(vis.svg)
+		//.transition()
+		.attr("r", 29)
+		.attr("cx", vis.width / 2)
+		.attr("cy", vis.height / 2)
+		.style("fill", function(d){ 
+			if(d.advantage == 1){
+				return '#EC7063';
+			}     
+			else{
+				return '#a2dbc0';
+			}
+		})
+		// .merge()
+		// .transition()
+		.style("fill-opacity", 0.85)
+		.attr("stroke", "black")
+		.style("stroke-width", 4)
+		console.log("yello")
+		console.log(vis.node)
+			
+	vis.simulation = d3.forceSimulation()
+	.force("x", d3.forceX().strength(0.5).x(d => vis.x(d.group)))
+	.force("y", d3.forceY().strength(0.1).y(vis.height/2 ))
+	.force("center", d3.forceCenter().x(vis.width / 2).y(vis.height / 2)) // Attraction to the center of the svg area
+	.force("charge", d3.forceManyBody().strength(1)) // Nodes are attracted one each other of value is > 0
+	.force("collide", d3.forceCollide().strength(.1).radius(32).iterations(1)) // Force that avoids circle overlapping
+			
+	// Apply these forces to the nodes and update their positions.
+	// Once the force algorithm is happy with positions ('alpha' value is low enough), simulations will stop.
+	vis.simulation
+		.nodes(vis.data)
+		.on("tick", function(d){
+			vis.node
+				.attr("cx", d => d.x)
+				.attr("cy", d => d.y)
+		});
+		// (modify data)
 		vis.wrangleData(0);
 	}
 
@@ -62,6 +102,9 @@ class PopulationVis {
 				if(rand < 0.5){
 					d.advantage = 1
 				}
+				else{
+					d.advantage = 0
+				}
 			})
 		}
 
@@ -79,46 +122,17 @@ class PopulationVis {
 	updateVis() {
 		let vis = this;
 		
-		vis.node = vis.svg.append("g")
-                .selectAll("circle")
-                .data(vis.data)
-                .enter()
-                .append("circle")
-				.merge(vis.svg)
-				//.transition()
-				.attr("r", 29)
-				.attr("cx", vis.width / 2)
-				.attr("cy", vis.height / 2)
-				.style("fill", function(d){ 
-					if(d.advantage == 1){
-						return '#EC7063';
-					}     
-					else{
-						return '#a2dbc0';
-					}
-				})
-				// .merge()
-				// .transition()
-				.style("fill-opacity", 0.85)
-				.attr("stroke", "black")
-				.style("stroke-width", 4)
-				
-		vis.simulation = d3.forceSimulation()
-		.force("x", d3.forceX().strength(0.5).x(d => vis.x(d.group)))
-		.force("y", d3.forceY().strength(0.1).y(vis.height/2 ))
-		.force("center", d3.forceCenter().x(vis.width / 2).y(vis.height / 2)) // Attraction to the center of the svg area
-		.force("charge", d3.forceManyBody().strength(1)) // Nodes are attracted one each other of value is > 0
-		.force("collide", d3.forceCollide().strength(.1).radius(32).iterations(1)) // Force that avoids circle overlapping
-				
-		// Apply these forces to the nodes and update their positions.
-		// Once the force algorithm is happy with positions ('alpha' value is low enough), simulations will stop.
-		vis.simulation
-			.nodes(vis.data)
-			.on("tick", function(d){
-				vis.node
-					.attr("cx", d => d.x)
-					.attr("cy", d => d.y)
-			});
+		vis.svg.selectAll('circle')
+		.data(vis.data)
+		.style("fill", function(d){ 
+			if(d.advantage == 1){
+				return '#EC7063';
+			}     
+			else{
+				return '#a2dbc0';
+			}
+		})
+
 
 		vis.svg.exit().remove();
 
