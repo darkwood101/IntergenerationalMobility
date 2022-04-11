@@ -1,8 +1,8 @@
-from agent import agent, privilege
-
+from aamodel.agent import agent, privilege
+from typing import List, Callable, Tuple
 
 class generation:
-    agents: list[agent]
+    agents: List[agent]
     N: int
     sigma: float
     tau: float
@@ -22,7 +22,7 @@ class generation:
                  p_A: float,
                  p_D: float,
                  a_dist: Callable[[], float],
-                 agents: list[agent]):
+                 agents: List[agent]):
         self.N = N
         self.sigma = sigma
         self.tau = tau
@@ -47,7 +47,7 @@ class generation:
                else privilege.PRIVILEGED
 
 
-    def step(self, theta_0, theta_1) -> tuple[generation, int]:
+    def step(self, theta_0, theta_1) -> Tuple['generation', int]:
         new_agents = list[agent]
         n_privileged = 0
         for a in self.agents:
