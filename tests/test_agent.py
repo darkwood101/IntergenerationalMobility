@@ -19,7 +19,6 @@ class agent_test(unittest.TestCase):
                   c = helpers.c_random(),
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
         self.assertLessEqual(0, a.a)
@@ -31,7 +30,6 @@ class agent_test(unittest.TestCase):
                   c = helpers.c_random(),
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
         self.assertAlmostEqual(a.a, 1.0)
@@ -42,7 +40,6 @@ class agent_test(unittest.TestCase):
                   c = helpers.c_random(),
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
         self.assertAlmostEqual(a.a, 0.0)
@@ -56,7 +53,6 @@ class agent_test(unittest.TestCase):
                   c = privilege.PRIVILEGED,
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
         self.assertTrue(a.is_privileged())
@@ -67,7 +63,6 @@ class agent_test(unittest.TestCase):
                   c = privilege.NOT_PRIVILEGED,
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
         self.assertFalse(a.is_privileged())
@@ -80,11 +75,16 @@ class agent_test(unittest.TestCase):
                   c = privilege.PRIVILEGED,
                   sigma = 0,
                   tau = 1,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertTrue(a.is_privileged())
         self.assertTrue(a.maybe_give_opportunity(random(), random()))
+        self.assertTrue(a.maybe_given)
+        self.assertTrue(a.given)
+        self.assertTrue(a.succeeded)
         self.assertTrue(a.is_privileged())
 
         # `sigma = 0` -- unprivileged agents can never succeed
@@ -92,11 +92,16 @@ class agent_test(unittest.TestCase):
                   c = privilege.NOT_PRIVILEGED,
                   sigma = 0,
                   tau = 1,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertFalse(a.is_privileged())
         self.assertFalse(a.maybe_give_opportunity(random(), random()))
+        self.assertTrue(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertFalse(a.is_privileged())
 
         # `sigma = 1, a_i = 1` -- unprivileged agents guaranteed to succeed
@@ -104,11 +109,16 @@ class agent_test(unittest.TestCase):
                   c = privilege.NOT_PRIVILEGED,
                   sigma = 1,
                   tau = 0,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertFalse(a.is_privileged())
         self.assertTrue(a.maybe_give_opportunity(random(), random()))
+        self.assertTrue(a.maybe_given)
+        self.assertTrue(a.given)
+        self.assertTrue(a.succeeded)
         self.assertTrue(a.is_privileged())
 
         # `sigma = 1, a_i = 1` -- privileged agents guaranteed to succeed
@@ -116,11 +126,16 @@ class agent_test(unittest.TestCase):
                   c = privilege.PRIVILEGED,
                   sigma = 1,
                   tau = 0,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertTrue(a.is_privileged())
         self.assertTrue(a.maybe_give_opportunity(random(), random()))
+        self.assertTrue(a.maybe_given)
+        self.assertTrue(a.given)
+        self.assertTrue(a.succeeded)
         self.assertTrue(a.is_privileged())
 
         # `a_i = 0` -- unprivileged agents can never succeed
@@ -129,11 +144,16 @@ class agent_test(unittest.TestCase):
                   c = privilege.NOT_PRIVILEGED,
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertFalse(a.is_privileged())
         self.assertFalse(a.maybe_give_opportunity(random(), random()))
+        self.assertTrue(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertFalse(a.is_privileged())
 
         # `a_i = 0, tau = 0` -- privileged agents can never succeed
@@ -141,11 +161,16 @@ class agent_test(unittest.TestCase):
                   c = privilege.PRIVILEGED,
                   sigma = 1,
                   tau = 0,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertTrue(a.is_privileged())
         self.assertFalse(a.maybe_give_opportunity(random(), random()))
+        self.assertTrue(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertTrue(a.is_privileged())
 
         # `a_i = 0, tau = 1` -- privileged agents guaranteed to succeed
@@ -153,27 +178,33 @@ class agent_test(unittest.TestCase):
                   c = privilege.PRIVILEGED,
                   sigma = 0,
                   tau = 1,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = helpers.p_A_random(),
                   p_D = helpers.p_D_random())
+        self.assertFalse(a.maybe_given)
         self.assertTrue(a.is_privileged())
         self.assertTrue(a.maybe_give_opportunity(random(), random()))
+        self.assertTrue(a.maybe_given)
+        self.assertTrue(a.given)
+        self.assertTrue(a.succeeded)
         self.assertTrue(a.is_privileged())
 
 
     def test_offspring(self):
         # `p_A = p_D = 0` -- children always inherit privilege
         sigma, tau = helpers.sigma_tau_random()
+        phi_0 = helpers.phi_0_random()
         a = agent(a_dist = helpers.a_dist_uniform,
                   c = helpers.c_random(),
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = 0,
                   p_D = 0)
         a.maybe_give_opportunity(random(), random())
-        a_child = a.produce_offspring()
-        self.assertEqual(a.c, a_child.c)
+        self.assertTrue(a.maybe_given)
+        parent_a_c = a.c
+        a.produce_offspring(phi_0)
+        self.assertFalse(a.maybe_given)
+        self.assertEqual(a.c, parent_a_c)
 
         # `p_A = p_D = 1` -- children's privilege is always redistributed
         # `phi_0 = 0` -- all redistribution results in privileged children
@@ -182,12 +213,14 @@ class agent_test(unittest.TestCase):
                   c = privilege.NOT_PRIVILEGED,
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = 0,
                   p_A = 1,
                   p_D = 1)
+        self.assertFalse(a.maybe_given)
         a.maybe_give_opportunity(random(), random())
-        a_child = a.produce_offspring()
-        self.assertTrue(a_child.is_privileged())
+        self.assertTrue(a.maybe_given)
+        a.produce_offspring(0)
+        self.assertFalse(a.maybe_given)
+        self.assertTrue(a.is_privileged())
 
         # `p_A = p_D = 1` -- children's privilege is always redistributed
         # `phi_0 = 1` -- all redistribution results in unprivileged children
@@ -196,72 +229,71 @@ class agent_test(unittest.TestCase):
                   c = privilege.PRIVILEGED,
                   sigma = sigma,
                   tau = tau,
-                  phi_0 = 1,
                   p_A = 1,
                   p_D = 1)
+        self.assertFalse(a.maybe_given)
         a.maybe_give_opportunity(random(), random())
-        a_child = a.produce_offspring()
-        self.assertFalse(a_child.is_privileged())
+        self.assertTrue(a.maybe_given)
+        a.produce_offspring(1)
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.is_privileged())
 
     def test_step(self):
         # `sigma = 1, a_i = 1` -- everyone guaranteed to succeed
         # `p_A = 0, p_D = 0` -- children will always inherit privilege
+        phi_0 = helpers.phi_0_random()
         a = agent(a_dist = helpers.a_dist_best,
                   c = helpers.c_random(),
                   sigma = 1,
                   tau = 0,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = 0,
                   p_D = 0)
         self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        a_child, succeeded = a.step(random(), random())
+        succeeded = a.step(random(), random(), phi_0)
         self.assertTrue(a.is_privileged())
-        self.assertTrue(a.maybe_given)
-        self.assertTrue(a.given)
-        self.assertTrue(a.succeeded)
-        self.assertTrue(a_child.is_privileged())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertTrue(succeeded)
 
         # `sigma = 0` -- unprivileged agents can never succeed
         # `p_A = p_D = 0` -- children will always inherit privilege
+        phi_0 = helpers.phi_0_random()
         a = agent(a_dist = helpers.a_dist_best,
                   c = privilege.NOT_PRIVILEGED,
                   sigma = 0,
                   tau = 1,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = 0,
                   p_D = 0)
         self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        a_child, succeeded = a.step(random(), random())
+        succeeded = a.step(random(), random(), phi_0)
         self.assertFalse(a.is_privileged())
-        self.assertTrue(a.maybe_given)
+        self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        self.assertFalse(a_child.is_privileged())
         self.assertFalse(succeeded)
 
         # `tau = 1` -- privileged agents will always succeed
         # `p_A = p_D = 0` -- children will always inherit privilege
+        phi_0 = helpers.phi_0_random()
         a = agent(a_dist = helpers.a_dist_best,
                   c = privilege.PRIVILEGED,
                   sigma = 0,
                   tau = 1,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = 0,
                   p_D = 0)
         self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        a_child, succeeded = a.step(random(), random())
+        succeeded = a.step(random(), random(), phi_0)
         self.assertTrue(a.is_privileged())
-        self.assertTrue(a.maybe_given)
-        self.assertTrue(a.given)
-        self.assertTrue(a.succeeded)
-        self.assertTrue(a_child.is_privileged())
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
+        self.assertFalse(a.succeeded)
         self.assertTrue(succeeded)
 
         # `sigma = 0, tau = 0` -- nobody can succeed
@@ -270,74 +302,77 @@ class agent_test(unittest.TestCase):
                   c = helpers.c_random(),
                   sigma = 0,
                   tau = 0,
-                  phi_0 = 0,
                   p_A = 1,
                   p_D = 1)
         self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        a_child, succeeded = a.step(random(), random())
-        self.assertTrue(a.maybe_given)
+        succeeded = a.step(random(), random(), 0)
+        self.assertTrue(a.is_privileged())
+        self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
         self.assertFalse(succeeded)
-        self.assertTrue(a_child.is_privileged())
 
         # `sigma = 0, tau = 0` -- nobody can succeed
         # `p_A = p_D = 0` -- children will always inherit privilege
+        phi_0 = helpers.phi_0_random()
         a = agent(a_dist = helpers.a_dist_best,
                   c = helpers.c_random(),
                   sigma = 0,
                   tau = 0,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = 0,
                   p_D = 0)
         self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        a_child, succeeded = a.step(random(), random())
-        self.assertTrue(a.maybe_given)
+        parent_c = a.c
+        succeeded = a.step(random(), random(), phi_0)
+        self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
         self.assertFalse(succeeded)
-        self.assertEqual(a.c, a_child.c)
+        self.assertEqual(parent_c, a.c)
 
         # `theta_0 = theta_1 = 1, sigma = tau = 0.5` -- thresholds are too high
         # so nobody will be given the opportunity
         # `p_A = p_D = 0` -- children will always inherit privilege
-        a = agent(a_dist = helpers.a_dist_uniform,
+        phi_0 = helpers.phi_0_random()
+        a = agent(a_dist = helpers.a_dist_best,
                   c = helpers.c_random(),
                   sigma = 0.5,
                   tau = 0.5,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = 0,
                   p_D = 0)
         self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        a_child, succeeded = a.step(1, 1)
-        self.assertTrue(a.maybe_given)
+        parent_c = a.c
+        succeeded = a.step(1, 1, phi_0)
+        self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
         self.assertFalse(succeeded)
-        self.assertEqual(a.c, a_child.c)
+        self.assertEqual(parent_c, a.c)
 
         # `theta_0 = theta_1 = 0, sigma = tau = 0` -- everyone will get the
         # opportunity, but nobody will succeed
         # `p_A = p_D = 0` -- children will always inherit privilege
-        a = agent(a_dist = helpers.a_dist_uniform,
+        phi_0 = helpers.phi_0_random()
+        a = agent(a_dist = helpers.a_dist_best,
                   c = helpers.c_random(),
                   sigma = 0,
                   tau = 0,
-                  phi_0 = helpers.phi_0_random(),
                   p_A = 0,
                   p_D = 0)
         self.assertFalse(a.maybe_given)
         self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
-        a_child, succeeded = a.step(0, 0)
-        self.assertTrue(a.maybe_given)
-        self.assertTrue(a.given)
+        parent_c = a.c
+        succeeded = a.step(0, 0, phi_0)
+        self.assertFalse(a.maybe_given)
+        self.assertFalse(a.given)
         self.assertFalse(a.succeeded)
         self.assertFalse(succeeded)
-        self.assertEqual(a.c, a_child.c)
+        self.assertEqual(parent_c, a.c)
+
