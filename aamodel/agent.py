@@ -1,5 +1,6 @@
 from random import random
 from enum import Enum
+from typing import Callable, Type, Tuple
 
 class privilege(Enum):
     PRIVILEGED = 1,
@@ -22,7 +23,7 @@ class agent:
 
     # TODO: set default values of parameters
     def __init__(self,
-                 a_dist: Callable[[], float]
+                 a_dist: Callable[[], float],
                  c: privilege,
                  sigma: float,
                  tau: float,
@@ -40,8 +41,13 @@ class agent:
         self.p_A = p_A
         self.p_D = p_D
 
-        self.success_prob = self.a * self.sigma + int(self.c) * self.tau
+        self.success_prob = self.a * self.sigma + \
+                            int(self.is_privileged()) * self.tau
         assert 0 <= self.success_prob <= 1
+
+        self.maybe_given = False
+        self.given = False
+        self.succeeded = False
 
     # Returns true if this agent is privileged
     def is_privileged(self) -> bool:
@@ -68,18 +74,18 @@ class agent:
 
     # Returns the offspring of this agent, computed according to the model
     # Can only be called after opportunity allocation
-    def produce_offspring(self) -> agent:
+    def produce_offspring(self) -> 'agent':
         assert self.maybe_given, "Cannot produce offspring until maybe given"
 
         new_c = privilege
         if self.is_privileged():
-            new_c = privilege.PRIVILEGED \
-                    if (random() <= self.p_A) and (random() > self.phi_0) \
-                    else privilege.NOT_PRIVILEGED
-        else:
             new_c = privilege.NOT_PRIVILEGED \
-                    if (random() <= self.p_D) and (random() <= self.phi_0) \
+                    if (random() <= self.p_A) and (random() <= self.phi_0) \
                     else privilege.PRIVILEGED
+        else:
+            new_c = privilege.PRIVILEGED \
+                    if (random() <= self.p_D) and (random() > self.phi_0) \
+                    else privilege.NOT_PRIVILEGED
 
         return agent(a_dist=self.a_dist,
                      c=new_c,
@@ -91,7 +97,7 @@ class agent:
 
     # Considers giving the opportunity to this agent. Returns the agent's
     # offspring, and a bool indicating whether the agent succeeded
-    def step(self, theta_0, theta_1) -> tuple[agent, bool]:
+    def step(self, theta_0, theta_1) -> Tuple['agent', bool]:
         succeeded = self.maybe_give_opportunity(theta_0, theta_1)
         new_agent = self.produce_offspring()
         return new_agent, succeeded
