@@ -8,7 +8,7 @@ class generation:
     a_dist: Callable[[], float]     # Distribution of abilities
     sigma: float                    # Ability multiplier
     tau: float                      # Privilege multiplier
-    n_privileged: float             # Number of privileged agents in this
+    n_privileged: int               # Number of privileged agents in this
                                     # generation (used to find `phi_0`)
     p_A: float                      # Probability of movement for privileged
                                     # agents
