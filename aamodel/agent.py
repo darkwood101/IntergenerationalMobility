@@ -87,13 +87,13 @@ class agent:
                     if (random() <= self.p_D) and (random() > self.phi_0) \
                     else privilege.NOT_PRIVILEGED
 
-        return agent(a_dist=self.a_dist,
-                     c=new_c,
-                     sigma=self.sigma,
-                     tau=self.tau,
-                     phi_0=self.phi_0,
-                     p_A=self.p_A,
-                     p_D=self.p_D)
+        return agent(a_dist = self.a_dist,
+                     c = new_c,
+                     sigma = self.sigma,
+                     tau = self.tau,
+                     phi_0 = self.phi_0,
+                     p_A = self.p_A,
+                     p_D = self.p_D)
 
     # Considers giving the opportunity to this agent. Returns the agent's
     # offspring, and a bool indicating whether the agent succeeded
