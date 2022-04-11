@@ -39,9 +39,6 @@ class generation:
         self.p_D = p_D
         self.N = N
 
-        self.n_successes = 0
-        self.payoff = 0
-
         p_agents = [agent(a_dist = self.a_dist,
                           c = privilege.PRIVILEGED,
                           sigma = self.sigma,
@@ -55,7 +52,7 @@ class generation:
                            tau = self.tau,
                            p_A = self.p_A,
                            p_D = self.p_D) \
-                     for _ in range(self.N - n_unprivileged)]
+                     for _ in range(self.N - n_privileged)]
         self.agents = p_agents + np_agents
         shuffle(self.agents)
 
