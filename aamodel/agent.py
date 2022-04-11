@@ -12,8 +12,6 @@ class agent:
     c: privilege                    # Privilege (circumstance from the paper)
     sigma: float                    # Ability multiplier
     tau: float                      # Privilege multiplier
-    phi_0: float                    # Fraction of unprivileged agents in the
-                                    # generation to which this agent belongs
     p_A: float                      # Probability of movement for privileged
                                     # agents
     p_D: float                      # Probability of movement for unprivileged
@@ -36,7 +34,6 @@ class agent:
                  c: privilege,
                  sigma: float,
                  tau: float,
-                 phi_0: float,
                  p_A: float,
                  p_D: float):
         self.a_dist = a_dist
@@ -46,7 +43,6 @@ class agent:
         # Assuming parameters were sanity-checked upstream
         self.sigma = sigma
         self.tau = tau
-        self.phi_0 = phi_0
         self.p_A = p_A
         self.p_D = p_D
 
@@ -67,7 +63,7 @@ class agent:
     # Gives an opportunity to this agent if success probability is above
     # threshold. Returns `True` if the opportunity is given and the agent
     # succeeds, `False` otherwise.
-    def maybe_give_opportunity(self, theta_0, theta_1) -> bool:
+    def maybe_give_opportunity(self, theta_0: float, theta_1: float) -> bool:
         threshold = theta_1 if self.is_privileged() else theta_0
 
         # Mark that this agent was considered for an opportunity
@@ -85,36 +81,35 @@ class agent:
         return self.succeeded
 
 
-    # Returns the offspring of this agent, computed according to the model.
+    # Evolves this agent into its offspring according to the model.
     # Can only be called after opportunity allocation.
-    def produce_offspring(self) -> 'agent':
+    def produce_offspring(self, phi_0: float) -> None:
         assert self.maybe_given, "Cannot produce offspring maybe given"
 
-        new_c: privilege
+        # Assign offspring privilege
         if self.is_privileged():
-            new_c = privilege.NOT_PRIVILEGED \
-                    if (random() <= self.p_A) and (random() <= self.phi_0) \
-                    else privilege.PRIVILEGED
+            self.c = privilege.NOT_PRIVILEGED \
+                     if (random() <= self.p_A) and (random() <= phi_0) \
+                     else privilege.PRIVILEGED
         else:
-            new_c = privilege.PRIVILEGED \
-                    if (random() <= self.p_D) and (random() > self.phi_0) \
-                    else privilege.NOT_PRIVILEGED
+            self.c = privilege.PRIVILEGED \
+                     if (random() <= self.p_D) and (random() > phi_0) \
+                     else privilege.NOT_PRIVILEGED
 
-        # Everything is inherited from this agent, except possibly circumstance
-        return agent(a_dist = self.a_dist,
-                     c = new_c,
-                     sigma = self.sigma,
-                     tau = self.tau,
-                     phi_0 = self.phi_0,
-                     p_A = self.p_A,
-                     p_D = self.p_D)
+        # Redraw ability
+        self.a = self.a_dist()
+
+        # Reset allocation and success booleans
+        self.maybe_given = False
+        self.given = False
+        self.succeeded = False
 
 
     # Evolves the agent according to the model.
     # Considers giving the opportunity to this agent. Returns the agent's
     # offspring, and a bool indicating whether the agent succeeded.
-    def step(self, theta_0, theta_1) -> Tuple['agent', bool]:
+    def step(self, theta_0: float, theta_1: float, phi_0: float) -> bool:
         succeeded = self.maybe_give_opportunity(theta_0, theta_1)
-        new_agent = self.produce_offspring()
-        return new_agent, succeeded
+        self.produce_offspring(phi_0)
+        return succeeded
 
