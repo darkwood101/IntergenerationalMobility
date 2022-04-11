@@ -341,18 +341,3 @@ class agent_test(unittest.TestCase):
         self.assertFalse(a.succeeded)
         self.assertFalse(succeeded)
         self.assertEqual(a.c, a_child.c)
-
-        """
-        sigma, tau = helpers.sigma_tau_random()
-        a = agent(a_dist = helpers.a_dist_best,
-                  c = privilege.PRIVILEGED,
-                  sigma = sigma,
-                  tau = tau,
-                  phi_0 = 1,
-                  p_A = 1,
-                  p_D = 1)
-        a.maybe_give_opportunity(random(), random())
-        a_child = a.produce_offspring()
-        self.assertFalse(a_child.is_privileged())       
-        """
-
