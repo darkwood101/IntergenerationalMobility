@@ -35,7 +35,6 @@ class generation:
             self.n_privileged = randint(0, N)
         else:
             self.n_privileged = n_privileged
-        self.n_privileged = n_privileged
         self.p_A = p_A
         self.p_D = p_D
         self.N = N
@@ -46,14 +45,14 @@ class generation:
                           tau = self.tau,
                           p_A = self.p_A,
                           p_D = self.p_D) \
-                    for _ in range(n_privileged)]
+                    for _ in range(self.n_privileged)]
         np_agents = [agent(a_dist = self.a_dist,
                            c = privilege.NOT_PRIVILEGED,
                            sigma = self.sigma,
                            tau = self.tau,
                            p_A = self.p_A,
                            p_D = self.p_D) \
-                     for _ in range(self.N - n_privileged)]
+                     for _ in range(self.N - self.n_privileged)]
         self.agents = p_agents + np_agents
 
     
