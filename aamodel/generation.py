@@ -89,5 +89,5 @@ class generation:
         for i in range(0, self.n_privileged):
             self.agents[i].c = True
         for i in range(0, self.N - self.n_privileged):
-            self.agent[i].c = False
+            self.agents[i].c = False
 
