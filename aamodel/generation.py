@@ -1,6 +1,6 @@
 from aamodel.agent import agent, privilege
 from typing import List, Callable, Tuple
-from random import random, shuffle
+from random import random, shuffle, randint
 
 class generation:
     # These are provided at construction time
@@ -17,9 +17,6 @@ class generation:
     N: int                          # Number of agents in this generation
 
     # These are derived during initialization
-    n_successes: float              # Number of successful agents in this
-                                    # generation
-    payoff: float                   # Undiscounted payoff from this generation
     agents: List[agent]             # List of agents in this generation
 
 
@@ -34,6 +31,10 @@ class generation:
         self.a_dist = a_dist
         self.sigma = sigma
         self.tau = tau
+        if n_privileged is None:
+            self.n_privileged = randint(0, N)
+        else:
+            self.n_privileged = n_privileged
         self.n_privileged = n_privileged
         self.p_A = p_A
         self.p_D = p_D
@@ -82,4 +83,9 @@ class generation:
             self.n_privileged += int(a.is_privileged())
 
         return n_successes
+
+    
+    # Reset the generation to a new state
+    def reset(self):
+        self.n_privileged = randint(0, self.N)
 
