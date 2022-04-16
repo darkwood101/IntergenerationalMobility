@@ -86,4 +86,8 @@ class generation:
     # Reset the generation to a new state
     def reset(self):
         self.n_privileged = randint(0, self.N)
+        for i in range(0, self.n_privileged):
+            self.agents[i].c = True
+        for i in range(0, self.N - self.n_privileged):
+            self.agent[i].c = False
 
