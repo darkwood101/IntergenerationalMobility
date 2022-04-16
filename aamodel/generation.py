@@ -1,6 +1,6 @@
 from aamodel.agent import agent, privilege
 from typing import List, Callable, Tuple
-from random import random, shuffle, randint
+from random import random, randint
 
 class generation:
     # These are provided at construction time
@@ -55,7 +55,6 @@ class generation:
                            p_D = self.p_D) \
                      for _ in range(self.N - n_privileged)]
         self.agents = p_agents + np_agents
-        shuffle(self.agents)
 
     
     @property
