@@ -54,7 +54,7 @@ class solver_test(unittest.TestCase):
         # Q[state, policy]
         states = np.linspace(0, 1, 1000)
         policies = Q.argmax(axis=1)[1:]
-        policies = policies / DISCRETIZATION
+        policies = policies * s.sigma / DISCRETIZATION
         plt.plot(states, policies)
         plt.show()
 

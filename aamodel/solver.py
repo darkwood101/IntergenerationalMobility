@@ -48,8 +48,10 @@ class mdp_solver:
         self.epsilon = epsilon
 
         # Set everything to -1 to catch bugs
-        self.R = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = float)
-        self.S = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
+        self.R = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
+        self.S = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
+        # self.R = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = float)
+        # self.S = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
 
         for s in range(self.N + 1):
             phi_0 = s / self.N
@@ -59,10 +61,10 @@ class mdp_solver:
             assert 0 <= lower <= self.sigma
             assert 0 <= upper <= self.sigma
             assert lower <= upper
-            lower = int(lower * DISCRETIZATION)
-            upper = int(upper * DISCRETIZATION)
+            lower = int(lower * DISCRETIZATION / self.sigma)
+            upper = int(upper * DISCRETIZATION / self.sigma)
             for a in range(lower, upper + 1):
-                theta_0 = a / DISCRETIZATION
+                theta_0 = a * self.sigma / DISCRETIZATION
                 self.R[s, a] = get_payoff(theta_0 = theta_0,
                                           phi_0 = phi_0,
                                           sigma = self.sigma,
@@ -89,8 +91,8 @@ class mdp_solver:
                 assert 0 <= lower <= self.sigma
                 assert 0 <= upper <= self.sigma
                 assert lower <= upper
-                lower = int(lower * DISCRETIZATION)
-                upper = int(upper * DISCRETIZATION)
+                lower = int(lower * DISCRETIZATION / self.sigma)
+                upper = int(upper * DISCRETIZATION / self.sigma)
                 for a in range(lower, upper + 1):
                     s_new = self.S[s, a]
                     # This also good
