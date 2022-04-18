@@ -7,6 +7,8 @@ from math import isclose
 
 DISCRETIZATION = 100
 
+counttt = 0
+
 class distribution(ABC):
     @abstractmethod
     def sample(self) -> float:
@@ -37,36 +39,64 @@ class uniform_dist(distribution):
     def sample(self):
         return random.uniform(0, 1)
 
+    # Compute `theta_1` given a `theta_0`
     def get_theta_1(self, theta_0, phi_0, sigma, tau, alpha):
         if isclose(phi_0, 1.0):
-            return tau
+            return tau + sigma / 2
 
         return (sigma * (1.0 - alpha) + (1.0 - phi_0) * tau - phi_0 * theta_0) / \
                (1.0 - phi_0)
 
+    # Compute expected payoff from privileged people for a given threshold
+    # `theta_1`
     def expected_priv_payoff(self, theta_1, phi_0, sigma, tau):
         if theta_1 < tau:
-            return (1 - phi_0) / 2
+            return (1 - phi_0) * (tau + sigma) / 2
         if theta_1 - tau > sigma:
             return 0
         return ((1 - phi_0) / (2 * sigma)) * ((sigma + tau) ** 2 - theta_1 ** 2)
 
+     
+    # Compute expected payoff from unprivileged people for a given threshold
+    # `theta_0`
     def expected_unpriv_payoff(self, theta_0, phi_0, sigma, tau):
         if theta_0 > sigma:
             return 0
         return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
 
+
+    # Compute expected payoff from everyone for given thresholds
+    # `theta_0` and `theta_1`
     def expected_payoff(self, theta_0, N, n_unpriv, sigma, tau, alpha):
         phi_0 = n_unpriv / N
         theta_1 = self.get_theta_1(theta_0, phi_0, sigma, tau, alpha)
+
+        if isclose(phi_0, 1.0):
+            return (1 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
+
+        return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2) + \
+               ((1.0 - phi_0) / (2 * sigma)) + ((sigma + tau) ** 2 - theta_1 ** 2)
+        """
+        print(n_unpriv)
+        print(theta_1)
+        print(theta_0)
+        print(self.expected_priv_payoff(theta_1, phi_0, sigma, tau)) 
+        """
+        assert 0 <= self.expected_priv_payoff(theta_1, phi_0, sigma, tau) <= 1
+        assert 0 <= self.expected_unpriv_payoff(theta_0, phi_0, sigma, tau) <= 1
+        assert 0 <= self.expected_priv_payoff(theta_1, phi_0, sigma, tau) + \
+                    self.expected_unpriv_payoff(theta_0, phi_0, sigma, tau) <= 1
         return self.expected_priv_payoff(theta_1, phi_0, sigma, tau) + \
                self.expected_unpriv_payoff(theta_0, phi_0, sigma, tau)
 
+    # 
     def action_bounds(self, phi_0, sigma, alpha):
         if isclose(phi_0, 0.0):
             return 0, 1
         lower = max(sigma * (1 - alpha / phi_0), 0)
         upper = min(sigma * (1 - alpha) / phi_0, 1)
+        assert lower <= upper
+        return lower, upper
         return lower, upper
 
 
@@ -140,10 +170,14 @@ class mdp_solver:
                 else:
                     phi_0_post = phi_0 - (phi_0 / (2 * self.sigma)) * \
                                          (self.sigma ** 2 - theta_0 ** 2)
+                """
                 self.S[s, a] = int((phi_0_post * (1 - self.p_D) + \
                                (phi_0_post ** 2) * self.p_D + \
                                (1 - phi_0_post) * self.p_A * phi_0_post) * \
                                self.N)
+                """
+                self.S[s, a] = phi_0 - (phi_0 / (2 * self.sigma)) * \
+                                       (self.sigma ** 2 - theta_0 ** 2)
 
 
     def run(self):
@@ -158,10 +192,11 @@ class mdp_solver:
 
                 for a in range(lower_action, upper_action):
                     s_new = self.S[s, a]
+                    if self.R[s, a] > self.alpha:
+                        print(self.R[s, a])
                     Q_new[s, a] = self.R[s, a] + \
                                   self.gamma * np.max(self.Q[s_new])
             max_e = np.max(np.abs(self.Q - Q_new))
-            print(max_e)
             self.Q = Q_new
             if max_e < self.epsilon:
                 return Q_new
