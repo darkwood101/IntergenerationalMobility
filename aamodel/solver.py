@@ -81,26 +81,36 @@ class mdp_solver:
                 self.S[s, a] = s_new
                 
     def run(self):
+        # MEGA HACKY TRICK
+        #
+        # We make a `mask` array where allowed state-policy pairs have value 1,
+        # and disallowed pairs have value 0
+        #
+        # Then, after we're done broadcasting, we multiply the result by this
+        # `mask` array, and we get rid of anything that's not allowed
+        #
+        # 10 seconds for gamma == 0.99 convergence
+        mask = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
+        for s in range(self.N + 1):
+            phi_0 = s / self.N
+            lower, upper = allowed_actions(phi_0 = phi_0,
+                                           sigma = self.sigma,
+                                           alpha = self.alpha)
+            assert 0 <= lower <= self.sigma
+            assert 0 <= upper <= self.sigma
+            assert lower <= upper
+            lower = int(lower * DISCRETIZATION / self.sigma)
+            upper = int(upper * DISCRETIZATION / self.sigma)
+            mask[s, lower : upper + 1] = 1
+
         while True:
             Q_new = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
-            for s in range(self.N + 1):
-                phi_0 = s / self.N
-                lower, upper = allowed_actions(phi_0 = phi_0,
-                                               sigma = self.sigma,
-                                               alpha = self.alpha)
-                assert 0 <= lower <= self.sigma
-                assert 0 <= upper <= self.sigma
-                assert lower <= upper
-                lower = int(lower * DISCRETIZATION / self.sigma)
-                upper = int(upper * DISCRETIZATION / self.sigma)
-                for a in range(lower, upper + 1):
-                    s_new = self.S[s, a]
-                    # This also good
-                    assert 0 <= self.R[s, a] <= self.alpha
-                    Q_new[s, a] = self.R[s, a] + \
-                                  self.gamma * np.max(self.Q[s_new])
+            maxes = self.Q.max(axis=1)
+            Q_new = (self.R + self.gamma * maxes[self.S]) * mask
             max_e = np.max(np.abs(self.Q - Q_new))
-            print(max_e)
+            #print(max_e)
             self.Q = Q_new
             if max_e < self.epsilon:
-                return Q_new
+                break
+
+        return self.Q
