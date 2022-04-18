@@ -1,6 +1,6 @@
 import unittest
 
-from aamodel.solver import mdp_solver, uniform_dist
+from aamodel.solver import mdp_solver, DISCRETIZATION
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -26,7 +26,7 @@ class solver_test(unittest.TestCase):
         plt.plot(Q.argmax(axis=1)[1:-1])
         plt.show()
         """
-
+        """
         u = uniform_dist()
         lower_bounds = []
         upper_bounds = []
@@ -37,8 +37,8 @@ class solver_test(unittest.TestCase):
         plt.plot(lower_bounds)
         plt.plot(upper_bounds)
         plt.show()
-        s = mdp_solver(dist = u,
-                       sigma = 0.4,
+        """
+        s = mdp_solver(sigma = 0.4,
                        tau = 0.1,
                        p_A = 0,
                        p_D = 0,
@@ -52,5 +52,9 @@ class solver_test(unittest.TestCase):
         plt.show()
         Q = s.run()
         # Q[state, policy]
-        plt.plot(Q.argmax(axis=1)[1:-1])
+        states = np.linspace(0, 1, 1000)
+        policies = Q.argmax(axis=1)[1:]
+        policies = policies / DISCRETIZATION
+        plt.plot(states, policies)
         plt.show()
+
