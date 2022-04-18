@@ -47,11 +47,9 @@ class mdp_solver:
         self.alpha = alpha
         self.epsilon = epsilon
 
-        # Set everything to -1 to catch bugs
         self.R = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
         self.S = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
-        # self.R = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = float)
-        # self.S = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
+        self.mask = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
 
         for s in range(self.N + 1):
             phi_0 = s / self.N
@@ -63,6 +61,7 @@ class mdp_solver:
             assert lower <= upper
             lower = int(lower * DISCRETIZATION / self.sigma)
             upper = int(upper * DISCRETIZATION / self.sigma)
+            self.mask[s, lower : upper + 1] = 1
             for a in range(lower, upper + 1):
                 theta_0 = a * self.sigma / DISCRETIZATION
                 self.R[s, a] = get_payoff(theta_0 = theta_0,
@@ -90,25 +89,11 @@ class mdp_solver:
         # `mask` array, and we get rid of anything that's not allowed
         #
         # 10 seconds for gamma == 0.99 convergence
-        mask = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
-        for s in range(self.N + 1):
-            phi_0 = s / self.N
-            lower, upper = allowed_actions(phi_0 = phi_0,
-                                           sigma = self.sigma,
-                                           alpha = self.alpha)
-            assert 0 <= lower <= self.sigma
-            assert 0 <= upper <= self.sigma
-            assert lower <= upper
-            lower = int(lower * DISCRETIZATION / self.sigma)
-            upper = int(upper * DISCRETIZATION / self.sigma)
-            mask[s, lower : upper + 1] = 1
-
         while True:
-            Q_new = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
-            maxes = self.Q.max(axis=1)
-            Q_new = (self.R + self.gamma * maxes[self.S]) * mask
+            Q_new = (self.R + self.gamma * self.Q.max(axis = 1)[self.S]) * \
+                    self.mask
             max_e = np.max(np.abs(self.Q - Q_new))
-            #print(max_e)
+            print("diff:", max_e)
             self.Q = Q_new
             if max_e < self.epsilon:
                 break
