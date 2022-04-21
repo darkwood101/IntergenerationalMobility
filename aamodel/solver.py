@@ -3,7 +3,7 @@ from math import isclose, nan, inf, isnan
 import numpy as np
 from scipy.stats import norm
 
-DISCRETIZATION = 100
+DISCRETIZATION = 1000
 
 class uniform_distribution:
     @staticmethod
@@ -110,17 +110,9 @@ class mdp_solver:
 
         for s in range(self.N + 1):
             phi_0 = s / self.N
-<<<<<<< HEAD
-            lower, upper = normal_allowed_actions(phi_0 = phi_0,
-                                           sigma = self.sigma,
-                                           alpha = self.alpha)
-            
-           
-=======
             lower, upper = dist.allowed_actions(phi_0 = phi_0,
                                                 sigma = self.sigma,
                                                 alpha = self.alpha)
->>>>>>> main
             assert 0 <= lower <= self.sigma
             assert 0 <= upper <= self.sigma
             assert lower <= upper
@@ -129,19 +121,11 @@ class mdp_solver:
             self.mask[s, lower : upper + 1] = 1
             for a in range(lower, upper + 1):
                 theta_0 = a * self.sigma / DISCRETIZATION
-<<<<<<< HEAD
-                self.R[s, a] = normal_get_payoff(theta_0 = theta_0,
-                                          phi_0 = phi_0,
-                                          sigma = self.sigma,
-                                          tau = self.tau,
-                                          alpha = self.alpha)
-=======
                 self.R[s, a] = dist.get_payoff(theta_0 = theta_0,
                                                phi_0 = phi_0,
                                                sigma = self.sigma,
                                                tau = self.tau,
                                                alpha = self.alpha)
->>>>>>> main
                 # Ok this is passing which is good
                 if self.R[s, a] <= 0 or self.R[s, a] >= 1:
                     print(theta_0, a, self.R[s, a])
