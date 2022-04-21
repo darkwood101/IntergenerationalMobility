@@ -99,11 +99,9 @@ class mdp_solver:
         self.alpha = alpha
         self.epsilon = epsilon
 
-        # Set everything to -1 to catch bugs
         self.R = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
         self.S = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
-        # self.R = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = float)
-        # self.S = -np.ones((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
+        self.mask = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
 
         for s in range(self.N + 1):
             phi_0 = s / self.N
@@ -117,6 +115,7 @@ class mdp_solver:
             assert lower <= upper
             lower = int(lower * DISCRETIZATION / self.sigma)
             upper = int(upper * DISCRETIZATION / self.sigma)
+            self.mask[s, lower : upper + 1] = 1
             for a in range(lower, upper + 1):
                 theta_0 = a * self.sigma / DISCRETIZATION
                 self.R[s, a] = normal_get_payoff(theta_0 = theta_0,
@@ -137,26 +136,22 @@ class mdp_solver:
                 self.S[s, a] = s_new
                 
     def run(self):
+        # MEGA HACKY TRICK
+        #
+        # We make a `mask` array where allowed state-policy pairs have value 1,
+        # and disallowed pairs have value 0
+        #
+        # Then, after we're done broadcasting, we multiply the result by this
+        # `mask` array, and we get rid of anything that's not allowed
+        #
+        # 10 seconds for gamma == 0.99 convergence
         while True:
-            Q_new = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
-            for s in range(self.N + 1):
-                phi_0 = s / self.N
-                lower, upper = normal_allowed_actions(phi_0 = phi_0,
-                                               sigma = self.sigma,
-                                               alpha = self.alpha)
-                assert 0 <= lower <= self.sigma
-                assert 0 <= upper <= self.sigma
-                assert lower <= upper
-                lower = int(lower * DISCRETIZATION / self.sigma)
-                upper = int(upper * DISCRETIZATION / self.sigma)
-                for a in range(lower, upper + 1):
-                    s_new = self.S[s, a]
-                    # This also good
-                    assert 0 <= self.R[s, a] <= self.alpha
-                    Q_new[s, a] = self.R[s, a] + \
-                                  self.gamma * np.max(self.Q[s_new])
+            Q_new = (self.R + self.gamma * self.Q.max(axis = 1)[self.S]) * \
+                    self.mask
             max_e = np.max(np.abs(self.Q - Q_new))
-            print(max_e)
+            print("diff:", max_e)
             self.Q = Q_new
             if max_e < self.epsilon:
-                return Q_new
+                break
+
+        return self.Q

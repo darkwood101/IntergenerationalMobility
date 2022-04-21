@@ -43,13 +43,9 @@ class solver_test(unittest.TestCase):
                        p_A = 0,
                        p_D = 0,
                        N = 1000,
-                       gamma = 0.8,
+                       gamma = 0.99,
                        alpha = 0.15,
                        epsilon = 0.0001)
-        plt.plot(s.R[-1, :])
-        plt.show()
-        plt.plot(s.R[1, :])
-        plt.show()
         Q = s.run()
         # Q[state, policy]
         states = np.linspace(0, 1, 1000)
