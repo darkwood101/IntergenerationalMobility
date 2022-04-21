@@ -3,32 +3,36 @@ import numpy as np
 
 DISCRETIZATION = 1000
 
-def allowed_actions(phi_0, sigma, alpha):
-    if isclose(phi_0, 0.0):
-        lower = 0
-        upper = sigma
-    else:
-        lower = max(sigma * (1.0 - alpha / phi_0), 0)
-        upper = min(sigma * (1.0 - alpha) / phi_0, sigma)
-    return lower, upper
+class uniform_distribution:
+    @staticmethod
+    def allowed_actions(phi_0, sigma, alpha):
+        if isclose(phi_0, 0.0):
+            lower = 0
+            upper = sigma
+        else:
+            lower = max(sigma * (1.0 - alpha / phi_0), 0)
+            upper = min(sigma * (1.0 - alpha) / phi_0, sigma)
+        return lower, upper
 
-def get_payoff(theta_0, phi_0, sigma, tau, alpha):
-    assert sigma >= theta_0
+    @staticmethod
+    def get_payoff(theta_0, phi_0, sigma, tau, alpha):
+        assert sigma >= theta_0
 
-    if isclose(phi_0, 1.0):
-        theta_1 = sigma + tau
-    else:
-        theta_1 = (sigma * (1.0 - alpha) + (1.0 - phi_0) * tau - phi_0 * theta_0) / \
-                  (1.0 - phi_0)
+        if isclose(phi_0, 1.0):
+            theta_1 = sigma + tau
+        else:
+            theta_1 = (sigma * (1.0 - alpha) + \
+                      (1.0 - phi_0) * tau - phi_0 * theta_0) / (1.0 - phi_0)
 
-    if tau + sigma < theta_1:
-        return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
+        if tau + sigma < theta_1:
+            return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
 
-    return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2) + \
-           ((1.0 - phi_0) / (2 * sigma)) * ((sigma + tau) ** 2 - theta_1 ** 2)
+        return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2) + \
+               ((1.0 - phi_0) / (2 * sigma)) * ((sigma + tau) ** 2 - theta_1 ** 2)
 
 class mdp_solver:
     def __init__(self,
+                 dist,
                  sigma,
                  tau,
                  p_A,
@@ -37,7 +41,7 @@ class mdp_solver:
                  gamma,
                  alpha,
                  epsilon):
-        self.Q = np.zeros((N + 1, DISCRETIZATION + 1), dtype = float)
+        self.dist = dist
         self.sigma = sigma
         self.tau = tau
         self.p_A = p_A
@@ -47,15 +51,16 @@ class mdp_solver:
         self.alpha = alpha
         self.epsilon = epsilon
 
+        self.Q = np.zeros((N + 1, DISCRETIZATION + 1), dtype = float)
         self.R = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
         self.S = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
         self.mask = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
 
         for s in range(self.N + 1):
             phi_0 = s / self.N
-            lower, upper = allowed_actions(phi_0 = phi_0,
-                                           sigma = self.sigma,
-                                           alpha = self.alpha)
+            lower, upper = dist.allowed_actions(phi_0 = phi_0,
+                                                sigma = self.sigma,
+                                                alpha = self.alpha)
             assert 0 <= lower <= self.sigma
             assert 0 <= upper <= self.sigma
             assert lower <= upper
@@ -64,11 +69,11 @@ class mdp_solver:
             self.mask[s, lower : upper + 1] = 1
             for a in range(lower, upper + 1):
                 theta_0 = a * self.sigma / DISCRETIZATION
-                self.R[s, a] = get_payoff(theta_0 = theta_0,
-                                          phi_0 = phi_0,
-                                          sigma = self.sigma,
-                                          tau = self.tau,
-                                          alpha = self.alpha)
+                self.R[s, a] = dist.get_payoff(theta_0 = theta_0,
+                                               phi_0 = phi_0,
+                                               sigma = self.sigma,
+                                               tau = self.tau,
+                                               alpha = self.alpha)
                 # Ok this is passing which is good
                 assert 0 <= self.R[s, a] <= self.alpha
                 phi_0_post = phi_0 - (phi_0 / (2 * sigma)) * \
