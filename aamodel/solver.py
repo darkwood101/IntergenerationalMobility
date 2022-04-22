@@ -1,9 +1,9 @@
-from cmath import isnan
+from cmath import isnan, tau
 from math import isclose, nan, inf, isnan
 import numpy as np
 from scipy.stats import norm
 
-DISCRETIZATION = 100
+DISCRETIZATION = 1000
 
 def allowed_actions(phi_0, sigma, alpha):
     if isclose(phi_0, 0.0):
@@ -105,7 +105,7 @@ class mdp_solver:
 
         for s in range(self.N + 1):
             phi_0 = s / self.N
-            lower, upper = normal_allowed_actions(phi_0 = phi_0,
+            lower, upper = allowed_actions(phi_0 = phi_0,
                                            sigma = self.sigma,
                                            alpha = self.alpha)
             
@@ -118,14 +118,12 @@ class mdp_solver:
             self.mask[s, lower : upper + 1] = 1
             for a in range(lower, upper + 1):
                 theta_0 = a * self.sigma / DISCRETIZATION
-                self.R[s, a] = normal_get_payoff(theta_0 = theta_0,
+                self.R[s, a] = get_payoff(theta_0 = theta_0,
                                           phi_0 = phi_0,
                                           sigma = self.sigma,
                                           tau = self.tau,
                                           alpha = self.alpha)
                 # Ok this is passing which is good
-                if self.R[s, a] <= 0 or self.R[s, a] >= 1:
-                    print(theta_0, a, self.R[s, a])
                 assert 0 <= self.R[s, a] <= self.alpha
                 phi_0_post = phi_0 - (phi_0 / (2 * sigma)) * \
                                      (sigma ** 2 - theta_0 ** 2)
@@ -153,5 +151,13 @@ class mdp_solver:
             self.Q = Q_new
             if max_e < self.epsilon:
                 break
-
+        
         return self.Q
+
+    def corresponding_theta_1(self, policies):
+        theta_1 = np.zeros(len(policies))
+        for pop_0 , policy in enumerate(policies):
+            phi_0 = pop_0 / len(policies)
+            t_1 = (self.sigma * (1 - self.alpha) + (1 - phi_0) * tau - phi_0 * policy) / (1 - phi_0)
+            theta_1[pop_0] = t_1
+        return theta_1
