@@ -54,3 +54,12 @@ class solver_test(unittest.TestCase):
         plt.plot(states, policies)
         plt.show()
 
+        # calculate the optimal theta_1 for the corresponding theta_0
+        print("policy shape")
+        print(len(policies), policies[0], policies[len(policies) - 1])
+
+        theta_1 = s.corresponding_theta_1(policies)
+
+        policy_differences = np.minimum(theta_1 - policies, s.sigma - policies)
+        plt.plot(states, policy_differences)
+        plt.show()
