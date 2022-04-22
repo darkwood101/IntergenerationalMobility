@@ -32,6 +32,104 @@ class uniform_distribution:
         return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2) + \
                ((1.0 - phi_0) / (2 * sigma)) * ((sigma + tau) ** 2 - theta_1 ** 2)
 
+    @staticmethod
+    def phi_0_post(theta_0, phi_0, sigma):
+        return phi_0 - (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
+
+
+class normal_distribution:
+    MEAN = 0.5
+    SD = 0.1
+
+    @staticmethod
+    def CDF(x):
+        return norm.cdf(x, loc = normal_distribution.MEAN, scale = normal_distribution.SD)
+
+    @staticmethod
+    def CDF_inv(x):
+        return norm.ppf(x, loc = normal_distribution.MEAN, scale = normal_distribution.SD)
+
+    @staticmethod
+    def PDF(x):
+        return norm.pdf(x, loc = normal_distribution.MEAN, scale = normal_distribution.SD)
+
+    @staticmethod
+    def allowed_actions(phi_0, sigma, alpha):
+        CDF_inv = normal_distribution.CDF_inv
+        if isclose(phi_0, 0.0):
+            lower = 0
+            upper = sigma
+        else:
+            if 1.0 - alpha / phi_0 < 0:
+                lower = 0
+            else:
+                lower = max(sigma * CDF_inv(1.0 - alpha / phi_0), 0)
+            if (1.0 - alpha) / phi_0 > 1:
+                upper = sigma
+            else:
+                upper = min(sigma * CDF_inv((1.0 - alpha) / phi_0), sigma)
+
+        if not isclose(phi_0, 0.0):
+            assert normal_distribution.CDF(lower / sigma) >= 1 - alpha / phi_0 or \
+                   isclose(normal_distribution.CDF(lower / sigma), 1 - alpha / phi_0)
+            assert normal_distribution.CDF(upper / sigma) <= (1 - alpha) / phi_0 or \
+                   isclose(normal_distribution.CDF(upper / sigma), (1 - alpha) / phi_0)
+        return lower, upper
+
+    @staticmethod
+    def get_payoff(theta_0, phi_0, sigma, tau, alpha):
+        assert sigma >= theta_0
+        CDF = normal_distribution.CDF
+        CDF_inv = normal_distribution.CDF_inv
+        PDF = normal_distribution.PDF
+        MEAN = normal_distribution.MEAN
+        SD = normal_distribution.SD
+
+        if isclose(phi_0, 1.0):
+            theta_1 = sigma + tau
+        else:
+            cdf_arg = (1.0 - alpha - phi_0 * CDF(theta_0 / sigma)) / (1.0 - phi_0)
+            if cdf_arg < 0.0:
+                assert isclose(cdf_arg, 0.0)
+                cdf_arg = 0.0
+            elif cdf_arg > 1.0:
+                #assert isclose(cdf_arg, 1.0)
+                cdf_arg = 1.0
+            theta_1 = sigma * CDF_inv(cdf_arg) + tau
+
+        unpriv_payoff = phi_0 * sigma * \
+                        (MEAN * (1 - CDF(theta_0 / sigma)) + \
+                         (SD ** 2) * PDF(theta_0 / sigma))
+
+        if tau + sigma < theta_1:
+            return unpriv_payoff
+
+        priv_payoff = (1.0 - phi_0) * (1.0 - CDF((theta_1 - tau) / sigma)) * \
+                      (sigma * (MEAN + (SD ** 2) * PDF((theta_1 - tau) / sigma) / \
+                      (1.0 - CDF((theta_1 - tau) / sigma))) + tau) 
+
+        """
+        if isnan(unpriv_payoff + priv_payoff):
+            print(theta_0, theta_1, phi_0, sigma, tau, alpha)
+            print(CDF_inv((1.0 - alpha - phi_0 * CDF(theta_0 / sigma)) / \
+                      (1.0 - phi_0)))
+            print((1.0 - alpha - phi_0 * CDF(theta_0 / sigma)) / \
+                      (1.0 - phi_0))
+        """
+
+        return unpriv_payoff + priv_payoff
+
+    @staticmethod
+    def phi_0_post(theta_0, phi_0, sigma):
+        CDF = normal_distribution.CDF
+        PDF = normal_distribution.PDF
+        MEAN = normal_distribution.MEAN
+        SD = normal_distribution.SD
+        return phi_0 - phi_0 * sigma * \
+                       (MEAN * (1 - CDF(theta_0 / sigma)) + \
+                       (SD ** 2) * PDF(theta_0 / sigma))
+
+
 def quantile(x, sigma):
     # returns quanitle value between -inf and inf
     # we want to cap it to 0 and 1
@@ -127,11 +225,8 @@ class mdp_solver:
                                                tau = self.tau,
                                                alpha = self.alpha)
                 # Ok this is passing which is good
-                if self.R[s, a] <= 0 or self.R[s, a] >= 1:
-                    print(theta_0, a, self.R[s, a])
                 assert 0 <= self.R[s, a] <= self.alpha
-                phi_0_post = phi_0 - (phi_0 / (2 * sigma)) * \
-                                     (sigma ** 2 - theta_0 ** 2)
+                phi_0_post = self.dist.phi_0_post(theta_0, phi_0, self.sigma)
                 phi_0_new = phi_0_post * (1.0 - self.p_D) + \
                             (phi_0_post ** 2) * self.p_D + \
                             (1 - phi_0_post) * self.p_A * phi_0_post
