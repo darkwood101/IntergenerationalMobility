@@ -1,192 +1,86 @@
-from cmath import isnan, tau
-from math import isclose, nan, inf, isnan
 import numpy as np
-from scipy.stats import norm
 
-DISCRETIZATION = 2000
-
-class uniform_distribution:
-    @staticmethod
-    def allowed_actions(phi_0, sigma, alpha):
-        if isclose(phi_0, 0.0):
-            lower = 0
-            upper = sigma
-        else:
-            lower = max(sigma * (1.0 - alpha / phi_0), 0)
-            upper = min(sigma * (1.0 - alpha) / phi_0, sigma)
-        return lower, upper
-
-    @staticmethod
-    def get_payoff(theta_0, phi_0, sigma, tau, alpha):
-        assert np.all(sigma >= theta_0)
-
-        if isclose(phi_0, 1.0):
-            theta_1 = sigma + tau
-        else:
-            theta_1 = (sigma * (1.0 - alpha) + \
-                      (1.0 - phi_0) * tau - phi_0 * theta_0) / (1.0 - phi_0)
-
-        with np.errstate(divide='ignore',invalid='ignore'):
-            priv_payoff = np.where(tau + sigma < theta_1, 0,
-                          ((1.0 - phi_0) / (2 * sigma)) * ((sigma + tau) ** 2 - theta_1 ** 2))
-
-        unpriv_payoff = (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
-
-        return unpriv_payoff + priv_payoff 
-
-    @staticmethod
-    def phi_0_post(theta_0, phi_0, sigma):
-        return phi_0 - (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
-
-
-class normal_distribution:
-    MEAN = 0.5
-    SD = 0.1
-
-    @staticmethod
-    def CDF(x):
-        return norm.cdf(x, loc = normal_distribution.MEAN, scale = normal_distribution.SD)
-
-    @staticmethod
-    def CDF_inv(x):
-        return norm.ppf(x, loc = normal_distribution.MEAN, scale = normal_distribution.SD)
-
-    @staticmethod
-    def PDF(x):
-        return norm.pdf(x, loc = normal_distribution.MEAN, scale = normal_distribution.SD)
-
-    @staticmethod
-    def allowed_actions(phi_0, sigma, alpha):
-        CDF_inv = normal_distribution.CDF_inv
-        if isclose(phi_0, 0.0):
-            lower = 0
-            upper = sigma
-        else:
-            if 1.0 - alpha / phi_0 < 0:
-                lower = 0
-            else:
-                lower = max(sigma * CDF_inv(1.0 - alpha / phi_0), 0)
-            if (1.0 - alpha) / phi_0 > 1:
-                upper = sigma
-            else:
-                upper = min(sigma * CDF_inv((1.0 - alpha) / phi_0), sigma)
-
-        if not isclose(phi_0, 0.0):
-            assert normal_distribution.CDF(lower / sigma) >= 1 - alpha / phi_0 or \
-                   isclose(normal_distribution.CDF(lower / sigma), 1 - alpha / phi_0)
-            assert normal_distribution.CDF(upper / sigma) <= (1 - alpha) / phi_0 or \
-                   isclose(normal_distribution.CDF(upper / sigma), (1 - alpha) / phi_0)
-        return lower, upper
-
-    @staticmethod
-    def get_payoff(theta_0, phi_0, sigma, tau, alpha):
-        assert np.all(sigma >= theta_0)
-        CDF = normal_distribution.CDF
-        CDF_inv = normal_distribution.CDF_inv
-        PDF = normal_distribution.PDF
-        MEAN = normal_distribution.MEAN
-        SD = normal_distribution.SD
-
-        if isclose(phi_0, 1.0):
-            theta_1 = np.empty(theta_0.shape, dtype = float)
-            theta_1.fill((tau + sigma) / 2)
-        else:
-            cdf_arg = (1.0 - alpha - phi_0 * CDF(theta_0 / sigma)) / (1.0 - phi_0)
-            cdf_arg = np.where(cdf_arg < 0, 0, cdf_arg)
-            cdf_arg = np.where(cdf_arg > 1, 1, cdf_arg)
-            theta_1 = sigma * CDF_inv(cdf_arg) + tau
-            assert not np.any(np.isnan(theta_1))
-
-        unpriv_payoff = phi_0 * sigma * \
-                        (MEAN * (1 - CDF(theta_0 / sigma)) + \
-                         (SD ** 2) * PDF(theta_0 / sigma))
-
-        """
-        if tau + sigma < theta_1:
-            return unpriv_payoff
-        """
-
-        with np.errstate(divide='ignore',invalid='ignore'):
-            priv_payoff = np.where(tau + sigma < theta_1, 0,
-                          (1.0 - phi_0) * (1.0 - CDF((theta_1 - tau) / sigma)) * \
-                          (sigma * (MEAN + (SD ** 2) * PDF((theta_1 - tau) / sigma) / \
-                          (1.0 - CDF((theta_1 - tau) / sigma))) + tau))
-        assert np.isfinite(priv_payoff).all()
-        """
-        if np.any(np.isclose(1.0 - CDF((theta_1 - tau) / sigma), 0.0)): 
-            print(1.0 - CDF((theta_1 - tau) / sigma))
-        """
-
-        """
-        if isnan(unpriv_payoff + priv_payoff):
-            print(theta_0, theta_1, phi_0, sigma, tau, alpha)
-            print(CDF_inv((1.0 - alpha - phi_0 * CDF(theta_0 / sigma)) / \
-                      (1.0 - phi_0)))
-            print((1.0 - alpha - phi_0 * CDF(theta_0 / sigma)) / \
-                      (1.0 - phi_0))
-        """
-
-        return unpriv_payoff + priv_payoff
-
-    @staticmethod
-    def phi_0_post(theta_0, phi_0, sigma):
-        CDF = normal_distribution.CDF
-        PDF = normal_distribution.PDF
-        MEAN = normal_distribution.MEAN
-        SD = normal_distribution.SD
-        return phi_0 - phi_0 * sigma * \
-                       (MEAN * (1 - CDF(theta_0 / sigma)) + \
-                       (SD ** 2) * PDF(theta_0 / sigma))
-
-
-def quantile(x, sigma):
-    # returns quanitle value between -inf and inf
-    # we want to cap it to 0 and 1
-    quantile = norm.ppf(x, 0.5, 1/sigma) 
-    
-    if quantile > 1 or x >= 1:
-        return 1
-    if quantile < 0 or x <= 0:
-        return 0
-
-    return quantile
-
-def normal_allowed_actions(phi_0, sigma, alpha):
-    if isclose(phi_0, 0.0):
-        lower = 0
-        upper = sigma
-    else:
-       
-        lower = sigma * quantile(1.0 - (alpha/phi_0), sigma)
-
-        upper = sigma * quantile((1.0 - alpha)/phi_0, sigma)
-    if lower > upper:
-        print(lower, upper, (alpha - 1)/phi_0, 1 - (alpha/phi_0))
-        #upper = min(sigma * (1.0 - alpha) / phi_0, sigma)
-    
-    return lower, upper
-
-def normal_get_payoff(theta_0, phi_0, sigma, tau, alpha):
-    assert sigma >= theta_0
-
-    if isclose(phi_0, 1.0):
-        theta_1 = sigma + tau
-    else:
-        theta_1 = (sigma * (1.0 - alpha) + (1.0 - phi_0) * tau - phi_0 * theta_0) / \
-                  (1.0 - phi_0)
-
-    if tau + sigma < theta_1:
-        return phi_0 * (1 - norm.cdf(theta_0/sigma, 0.5, sigma/10)) * \
-            (sigma * quantile(0.5 * (1 - norm.cdf(theta_0/sigma, 0.5, sigma/10) + norm.cdf(theta_0/sigma, 0.5, sigma/10)), sigma))
-
-    return phi_0 * (1 - norm.cdf(theta_0/sigma, 0.5, sigma/10)) * \
-            (sigma * quantile( (0.5 * (1 - norm.cdf(theta_0/sigma, 0.5, sigma/10))) + norm.cdf(theta_0/sigma, 0.5, sigma/10), sigma)) + \
-            (1 - phi_0) * (1 - norm.cdf((theta_1 - tau)/sigma)) * \
-            (sigma * quantile((0.5 *(1 - norm.cdf((theta_1 - tau)/sigma))) + norm.cdf((theta_1 - tau)/sigma, 0.5, sigma/10), sigma))
-
-    
 
 class mdp_solver:
+    """
+    This class fins the optimal policies for every state of the system.
+    The state is defined as `phi_0`, the fraction of the population who are
+    unprivileged.
+    The policy is `theta_0`, the threshold for opportunity allocation for the
+    unprivileged population (the threshold for the privileged population
+    `theta_1` is determined from `theta_0`).
+
+    Since our state and policy spaces are discretized, internally we use
+    integers to label them. That is, a state `i` refers to `phi_0 = i / N`,
+    while a policy `j` refers to `theta_0 = j / discretization`.
+
+    Attributes
+    ----------
+    dist
+        The distribution of individuals' abilities. We currently support two
+        distributions: `uniform_distribution` and `normal_distribution`.
+        Every distribution has to implement the following methods:
+        `allowed_actions`, `theta_1_from_theta_0`, `get_payoff`, and
+        `phi_0_post`. For descriptions of these methods, see
+        `uniform_distribution`.
+    sigma : float
+        The ability multiplier. Always has to be in [0, 1].
+    tau : float
+        The privilege multiplier. Always has to be in [0, 1]. In addition, we
+        need to have `sigma + tau <= 1`.
+    p_A : float
+        Probability of privilege redistribution for the privileged group.
+        Always has to be in [0, 1].
+    p_D : float
+        Probability of privilege redistribution for the unprivileged group.
+        Always has to be in [0, 1].
+    N : int
+        Number of agents. This will determine `phi_0` discretization.
+    gamma : float
+        Reward discount factor. Always has to be in (0, 1).
+    alpha : float
+        Fraction of population that can receive an opportunity in a single
+        generation. That is, we assume that we can give no more than
+        `alpha * N` opportunities.
+    discretization : int
+        Discretization of the policy space. By default, we choose 2000. A larger
+        number will increase running time. Note that policies are not
+        discretized by dividing [0, 1] into `discretization` pieces, but by
+        dividing [0, `sigma`] into `discretization` pieces. This is because
+        the largest possible policy is `sigma`.
+    Q : numpy.ndarray
+        A float array of shape `(N + 1, discretization + 1)`. Here, we store
+        infinite-horizon rewards for state-policy pairs during the learning
+        process. The entry `Q[i, j]` gives the infinite-horizon reward for
+        taking policy `j` in state `i`.
+    R : numpy.ndarray
+        A float array of shape `(N + 1, discretization + 1)`. This array stores
+        immediate rewards for state-policy pairs. The entry `Q[i, j]` gives the
+        immediate undiscounted reward for taking policy `j` in state `i`.
+    S : numpy.ndarray
+        An integer array of shape `(N + 1, discretization + 1)`. This array
+        stores the transition states for state-policy pairs. The entry `Q[i, j]`
+        gives the state to which the system transitions when taking policy `j`
+        in state `i`. The states are stored as integers in [0, N].
+    mask : numpy.ndarray
+        A boolean array of shape `(N + 1, discretization + 1)`. An entry
+        `Q[i, j]` is `True` iff policy `j` is allowed to be taken from state
+        `i`. A policy would not be allowed when it would lead to the total
+        amount of allocated opportunities being strictly less or more than
+        `alpha`.
+    theta_0 : numpy.ndarray
+        A float array of shape `(N + 1,)`. This array stores the optimal
+        policies for each state. An entry `theta_0[i]` gives the optimal
+        policy for state `i`. This attribute should be retrieved only after
+        calling `run`.
+    theta_1 : numpy.ndarray
+        A float array of shape `(N + 1,)`. This array stores the optimal
+        thresholds for privileged population for each state. An entry
+        `theta_1[i]` gives the optimal privileged threshold for state `i`. This
+        entry should be retrieved only after calling `run`.
+    """
+
+
     def __init__(self,
                  dist,
                  sigma,
@@ -196,88 +90,126 @@ class mdp_solver:
                  N,
                  gamma,
                  alpha,
-                 epsilon):
+                 discretization = 2000):
+        assert callable(getattr(dist, "allowed_actions", None)) and \
+               callable(getattr(dist, "theta_1_from_theta_0", None)) and \
+               callable(getattr(dist, "get_payoff", None)) and \
+               callable(getattr(dist, "phi_0_post", None)), \
+               "The distribution does not implement all required methods"
         self.dist = dist
+
+        assert 0 <= sigma <= 1, \
+               "Ability multiplier has to be in [0, 1]"
         self.sigma = sigma
+
+        assert 0 <= tau <= 1, \
+               "Privilege multiplier has to be in [0, 1]"
+        assert tau + sigma <= 1, \
+               "Ability and privilege multipliers have to sum to at most 1"
         self.tau = tau
+
+        assert 0 <= p_A <= 1 and 0 <= p_D <= 1, \
+               "Transition probabilities have to be in [0, 1]"
         self.p_A = p_A
         self.p_D = p_D
-        self.N = N
-        self.gamma = gamma
-        self.alpha = alpha
-        self.epsilon = epsilon
 
-        self.Q = np.zeros((N + 1, DISCRETIZATION + 1), dtype = float)
-        self.R = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = float)
-        self.S = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
-        self.mask = np.zeros((self.N + 1, DISCRETIZATION + 1), dtype = np.int32)
+        assert isinstance(N, int) and N > 0, \
+               "The number of agents has to be a positive integer"
+        self.N = N
+
+        assert 0 < gamma < 1, \
+               "The discount factor has to be in (0, 1)"
+        self.gamma = gamma
+
+        assert 0 <= alpha <= 1, \
+               "The maximum fraction of opportunities has to be in [0, 1]"
+        self.alpha = alpha
+
+        assert isinstance(discretization, int) and discretization > 0, \
+               "The discretization has to be a positive integer"
+        self.discretization = discretization
+
+        self.Q = np.zeros((N + 1, self.discretization + 1),
+                          dtype = float)
+        self.R = np.zeros((self.N + 1, self.discretization + 1),
+                          dtype = float)
+        self.S = np.zeros((self.N + 1, self.discretization + 1),
+                          dtype = np.int32)
+        self.mask = np.zeros((self.N + 1, self.discretization + 1),
+                             dtype = np.int32)
+        self.theta_0 = np.zeros(self.N + 1,
+                                dtype = float)
+        self.theta_1 = np.zeros(self.N + 1,
+                                dtype = float)
 
         for s in range(self.N + 1):
             phi_0 = s / self.N
             lower, upper = dist.allowed_actions(phi_0 = phi_0,
                                                 sigma = self.sigma,
                                                 alpha = self.alpha)
-            assert 0 <= lower <= self.sigma
-            assert 0 <= upper <= self.sigma
-            assert lower <= upper
-            lower = int(lower * DISCRETIZATION / self.sigma)
-            upper = int(upper * DISCRETIZATION / self.sigma)
+            # Discretize allowed actions
+            lower = int(lower * self.discretization/ self.sigma)
+            upper = int(upper * self.discretization / self.sigma)
+
             self.mask[s, lower : upper + 1] = 1
-            thetas = np.arange(lower, upper + 1) * self.sigma / DISCRETIZATION
+            
+            # Find payoffs for all allowed policies
+            thetas = np.arange(lower, upper + 1) * \
+                     self.sigma / self.discretization
             self.R[s, lower : upper + 1] = dist.get_payoff(theta_0 = thetas,
                                                            phi_0 = phi_0,
                                                            sigma = self.sigma,
                                                            tau = self.tau,
                                                            alpha = self.alpha)
+
+            # Find the new state for each policy
             phi_0_posts = self.dist.phi_0_post(thetas, phi_0, self.sigma)
+            # NB: This is a general formula that applies to any distribution
             phi_0_news = phi_0_posts * (1.0 - self.p_D) + \
                          (phi_0_posts ** 2) * self.p_D + \
                          (1 - phi_0_posts) * self.p_A * phi_0_posts
+            # Discretize new states and update `S`
             s_news = (phi_0_news * self.N).astype(int)
             self.S[s, lower : upper + 1] = s_news
-            """
-            for a in range(lower, upper + 1):
-                theta_0 = a * self.sigma / DISCRETIZATION
-                self.R[s, a] = dist.get_payoff(theta_0 = theta_0,
-                                               phi_0 = phi_0,
-                                               sigma = self.sigma,
-                                               tau = self.tau,
-                                               alpha = self.alpha)
-                # Ok this is passing which is good
-                assert 0 <= self.R[s, a] <= self.alpha
-                phi_0_post = self.dist.phi_0_post(theta_0, phi_0, self.sigma)
-                phi_0_new = phi_0_post * (1.0 - self.p_D) + \
-                            (phi_0_post ** 2) * self.p_D + \
-                            (1 - phi_0_post) * self.p_A * phi_0_post
-                s_new = int(phi_0_new * self.N)
-                self.S[s, a] = s_new
-                """
+
                 
-    def run(self):
-        # MEGA HACKY TRICK
-        #
-        # We make a `mask` array where allowed state-policy pairs have value 1,
-        # and disallowed pairs have value 0
-        #
-        # Then, after we're done broadcasting, we multiply the result by this
-        # `mask` array, and we get rid of anything that's not allowed
-        #
-        # 10 seconds for gamma == 0.99 convergence
+    def run(self, epsilon = 1e-4):
+        """
+        Solves for optimal policies using infinite-horizon value iteration.
+
+        Parameters
+        ----------
+        epsilon : float (optional)
+            The threshold for terminating the value iteration. If the `Q` matrix
+            is updated by less than `epsilon` in an iteration, we consider the
+            algorithm to be converged.
+
+        Returns
+        -------
+        phi_0, theta_0, theta_1
+            All of these are float arrays of shape `(N + 1,)`.
+            `phi_0` contains all (non-discretized) states.
+            `theta_0` contains the corresponding optimal policies (i.e.
+            thresholds for the unprivileged population). `theta_1` contains the
+            corresponding thresholds for the privileged population.
+        """
         while True:
+            # Perform an update, but multiply by `mask` to get rid of the
+            # entries for disallowed state-policy pairs.
             Q_new = (self.R + self.gamma * self.Q.max(axis = 1)[self.S]) * \
                     self.mask
             max_e = np.max(np.abs(self.Q - Q_new))
             print("diff:", max_e)
             self.Q = Q_new
-            if max_e < self.epsilon:
+            if max_e < epsilon:
                 break
         
-        return self.Q
+        phi_0 = np.linspace(0, 1, self.N + 1)
+        self.theta_0 = self.Q.argmax(axis=1) * self.sigma / self.discretization
+        self.theta_1 = self.dist.theta_1_from_theta_0(self.theta_0,
+                                                      phi_0,
+                                                      self.sigma,
+                                                      self.tau,
+                                                      self.alpha)
+        return phi_0, self.theta_0, self.theta_1
 
-    def corresponding_theta_1(self, policies):
-        theta_1 = np.zeros(len(policies))
-        for pop_0 , policy in enumerate(policies):
-            phi_0 = pop_0 / len(policies)
-            t_1 = (self.sigma * (1 - self.alpha) + (1 - phi_0) * tau - phi_0 * policy) / (1 - phi_0)
-            theta_1[pop_0] = t_1
-        return theta_1

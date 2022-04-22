@@ -1,60 +1,41 @@
 import unittest
 
-from aamodel.solver import mdp_solver, \
-                           uniform_distribution, \
-                           normal_distribution, \
-                           DISCRETIZATION
+from aamodel.solver import mdp_solver
+from aamodel.uniform_distribution import uniform_distribution
+from aamodel.normal_distribution import normal_distribution
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class solver_test(unittest.TestCase):
     def test_R(self):
-        s = mdp_solver(dist = uniform_distribution,
-                       sigma = 0.4,
-                       tau = 0.1,
-                       p_A = 0,
-                       p_D = 0,
-                       N = 2000,
-                       gamma = 0.99,
-                       alpha = 0.15,
-                       epsilon = 0.0001)
-        Q = s.run()
-        # Q[state, policy]
-        states = np.linspace(0, 1, 2000)
-        policies = Q.argmax(axis=1)[1:]
-        policies = policies * s.sigma / DISCRETIZATION
-        plt.plot(states, policies)
+        s_u = mdp_solver(dist = uniform_distribution(0, 1),
+                         sigma = 0.4,
+                         tau = 0.1,
+                         p_A = 0,
+                         p_D = 0,
+                         N = 2000,
+                         gamma = 0.8,
+                         alpha = 0.15)
+        states_u, theta_0_u, theta_1_u = s_u.run()
+
+        s_n = mdp_solver(dist = normal_distribution(0.5, 0.1),
+                         sigma = 0.4,
+                         tau = 0.1,
+                         p_A = 0,
+                         p_D = 0,
+                         N = 2000,
+                         gamma = 0.8,
+                         alpha = 0.15)
+        states_n, theta_0_n, theta_1_n = s_n.run()
+
+        plt.plot(states_u[1:], theta_0_u[1:])
+        plt.plot(states_n[1:], theta_0_n[1:])
         plt.show()
 
-        """
-        s = mdp_solver(dist = uniform_distribution,
-                       sigma = 0.4,
-                       tau = 0.1,
-                       p_A = 0,
-                       p_D = 0,
-                       N = 1000,
-                       gamma = 0.99,
-                       alpha = 0.75,
-                       epsilon = 0.0001)
-        Q = s.run()
-        # Q[state, policy]
-        states = np.linspace(0, 1, 1000)
-        policies_norm = Q.argmax(axis=1)[1:]
-        policies_norm = policies_norm * s.sigma / DISCRETIZATION
-        plt.plot(states, policies_norm)
 
+        policy_diff_u = np.minimum(theta_1_u - theta_0_u, s_u.sigma - theta_0_u)
+        policy_diff_n = np.minimum(theta_1_n - theta_0_n, s_n.sigma - theta_0_n)
+        plt.plot(states_u[1:], policy_diff_u[1:])
+        plt.plot(states_n[1:], policy_diff_n[1:])
         plt.show()
-        
-        
-
-        # calculate the optimal theta_1 for the corresponding theta_0
-        print("policy shape")
-        print(len(policies), policies[0], policies[len(policies) - 1])
-
-        theta_1 = s.corresponding_theta_1(policies)
-
-        policy_differences = np.minimum(theta_1 - policies, s.sigma - policies)
-        plt.plot(states, policy_differences)
-        plt.show()
-        """
