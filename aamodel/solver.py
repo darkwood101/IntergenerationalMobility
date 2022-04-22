@@ -3,7 +3,7 @@ from math import isclose, nan, inf, isnan
 import numpy as np
 from scipy.stats import norm
 
-DISCRETIZATION = 1000
+DISCRETIZATION = 2000
 
 class uniform_distribution:
     @staticmethod
@@ -18,7 +18,7 @@ class uniform_distribution:
 
     @staticmethod
     def get_payoff(theta_0, phi_0, sigma, tau, alpha):
-        assert sigma >= theta_0
+        assert np.all(sigma >= theta_0)
 
         if isclose(phi_0, 1.0):
             theta_1 = sigma + tau
@@ -26,11 +26,13 @@ class uniform_distribution:
             theta_1 = (sigma * (1.0 - alpha) + \
                       (1.0 - phi_0) * tau - phi_0 * theta_0) / (1.0 - phi_0)
 
-        if tau + sigma < theta_1:
-            return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
+        with np.errstate(divide='ignore',invalid='ignore'):
+            priv_payoff = np.where(tau + sigma < theta_1, 0,
+                          ((1.0 - phi_0) / (2 * sigma)) * ((sigma + tau) ** 2 - theta_1 ** 2))
 
-        return (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2) + \
-               ((1.0 - phi_0) / (2 * sigma)) * ((sigma + tau) ** 2 - theta_1 ** 2)
+        unpriv_payoff = (phi_0 / (2 * sigma)) * (sigma ** 2 - theta_0 ** 2)
+
+        return unpriv_payoff + priv_payoff 
 
     @staticmethod
     def phi_0_post(theta_0, phi_0, sigma):
@@ -78,7 +80,7 @@ class normal_distribution:
 
     @staticmethod
     def get_payoff(theta_0, phi_0, sigma, tau, alpha):
-        assert sigma >= theta_0
+        assert np.all(sigma >= theta_0)
         CDF = normal_distribution.CDF
         CDF_inv = normal_distribution.CDF_inv
         PDF = normal_distribution.PDF
@@ -86,27 +88,34 @@ class normal_distribution:
         SD = normal_distribution.SD
 
         if isclose(phi_0, 1.0):
-            theta_1 = sigma + tau
+            theta_1 = np.empty(theta_0.shape, dtype = float)
+            theta_1.fill((tau + sigma) / 2)
         else:
             cdf_arg = (1.0 - alpha - phi_0 * CDF(theta_0 / sigma)) / (1.0 - phi_0)
-            if cdf_arg < 0.0:
-                assert isclose(cdf_arg, 0.0)
-                cdf_arg = 0.0
-            elif cdf_arg > 1.0:
-                #assert isclose(cdf_arg, 1.0)
-                cdf_arg = 1.0
+            cdf_arg = np.where(cdf_arg < 0, 0, cdf_arg)
+            cdf_arg = np.where(cdf_arg > 1, 1, cdf_arg)
             theta_1 = sigma * CDF_inv(cdf_arg) + tau
+            assert not np.any(np.isnan(theta_1))
 
         unpriv_payoff = phi_0 * sigma * \
                         (MEAN * (1 - CDF(theta_0 / sigma)) + \
                          (SD ** 2) * PDF(theta_0 / sigma))
 
+        """
         if tau + sigma < theta_1:
             return unpriv_payoff
+        """
 
-        priv_payoff = (1.0 - phi_0) * (1.0 - CDF((theta_1 - tau) / sigma)) * \
-                      (sigma * (MEAN + (SD ** 2) * PDF((theta_1 - tau) / sigma) / \
-                      (1.0 - CDF((theta_1 - tau) / sigma))) + tau) 
+        with np.errstate(divide='ignore',invalid='ignore'):
+            priv_payoff = np.where(tau + sigma < theta_1, 0,
+                          (1.0 - phi_0) * (1.0 - CDF((theta_1 - tau) / sigma)) * \
+                          (sigma * (MEAN + (SD ** 2) * PDF((theta_1 - tau) / sigma) / \
+                          (1.0 - CDF((theta_1 - tau) / sigma))) + tau))
+        assert np.isfinite(priv_payoff).all()
+        """
+        if np.any(np.isclose(1.0 - CDF((theta_1 - tau) / sigma), 0.0)): 
+            print(1.0 - CDF((theta_1 - tau) / sigma))
+        """
 
         """
         if isnan(unpriv_payoff + priv_payoff):
@@ -214,6 +223,19 @@ class mdp_solver:
             lower = int(lower * DISCRETIZATION / self.sigma)
             upper = int(upper * DISCRETIZATION / self.sigma)
             self.mask[s, lower : upper + 1] = 1
+            thetas = np.arange(lower, upper + 1) * self.sigma / DISCRETIZATION
+            self.R[s, lower : upper + 1] = dist.get_payoff(theta_0 = thetas,
+                                                           phi_0 = phi_0,
+                                                           sigma = self.sigma,
+                                                           tau = self.tau,
+                                                           alpha = self.alpha)
+            phi_0_posts = self.dist.phi_0_post(thetas, phi_0, self.sigma)
+            phi_0_news = phi_0_posts * (1.0 - self.p_D) + \
+                         (phi_0_posts ** 2) * self.p_D + \
+                         (1 - phi_0_posts) * self.p_A * phi_0_posts
+            s_news = (phi_0_news * self.N).astype(int)
+            self.S[s, lower : upper + 1] = s_news
+            """
             for a in range(lower, upper + 1):
                 theta_0 = a * self.sigma / DISCRETIZATION
                 self.R[s, a] = dist.get_payoff(theta_0 = theta_0,
@@ -229,6 +251,7 @@ class mdp_solver:
                             (1 - phi_0_post) * self.p_A * phi_0_post
                 s_new = int(phi_0_new * self.N)
                 self.S[s, a] = s_new
+                """
                 
     def run(self):
         # MEGA HACKY TRICK
