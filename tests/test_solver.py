@@ -19,7 +19,7 @@ class solver_test(unittest.TestCase):
                          alpha = 0.15)
         states_u, theta_0_u, theta_1_u = s_u.run()
 
-        s_n = mdp_solver(dist = normal_distribution(0.5, 0.1),
+        s_n = mdp_solver(dist = normal_distribution(0.5, 0.05),
                          sigma = 0.4,
                          tau = 0.1,
                          p_A = 0,

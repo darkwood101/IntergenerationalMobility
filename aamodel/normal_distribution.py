@@ -117,7 +117,7 @@ class normal_distribution:
         payoffs = unpriv_payoffs + priv_payoffs
         assert np.all(0 <= payoffs) and np.all(payoffs <= alpha)
         return payoffs
-                         
+ 
 
     def phi_0_post(self, theta_0, phi_0, sigma):
         assert np.all(theta_0 <= sigma)
