@@ -107,6 +107,7 @@ class normal_distribution:
         # Everywhere where `tau + sigma < theta_1`, replace payoff with 0
         # (nobody from privileged population gets an opportunity).
         priv_payoffs = np.where(tau + sigma < theta_1, 0, possible_priv_payoffs)
+        priv_payoffs = np.where(np.isnan(priv_payoffs), 0, priv_payoffs)
 
         # Compute payoffs for unprivileged population
         arg = theta_0 / sigma
