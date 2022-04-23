@@ -1,6 +1,8 @@
 # Plot optimal `theta_0` vs `phi_0` for parameters from Figure 3 and
-# `gamma = 0.8`, for both uniform and normal.
-# Also plot affirmative action (like Fig 3b).
+# `gamma = 0.8`, for varying standard deviation values. 
+# Also plot `phi_0` vs `theta_1 - theta_0` for parameters from Figure 3 and 
+# `gamma = 0.8` for varying values of the standard deviation.  
+
 
 import sys
 sys.path.append("..")
@@ -13,6 +15,7 @@ import os.path
 plt.rc('text', usetex = True)
 plt.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 plt.rc('figure', figsize = (5, 5))
+
 
 from aamodel.solver import mdp_solver
 from aamodel.uniform_distribution import uniform_distribution
@@ -28,15 +31,13 @@ def main():
     filename = sys.argv[0][:-3]
 
     sigmas = [0.05, 0.075, 0.1, 0.125, 0.15]
-    states_n_list = []
-    theta_0_n_list = []
-    theta_1_n_list = []
 
     for i, sigma in enumerate(sigmas):
         normal_filename = "data/" + filename + str(i) + ".csv"
         if not os.path.exists(normal_filename):
-            s_n = mdp_solver(dist = normal_distribution(0.5, 0.05),
-                             sigma = sigma,
+            print("1")
+            s_n = mdp_solver(dist = normal_distribution(0.5, sigma),
+                             sigma = 0.4,
                              tau = 0.1,
                              p_A = 0,
                              p_D = 0,
@@ -56,30 +57,27 @@ def main():
             theta_0_n = df["theta_0_n"].to_numpy()
             theta_1_n = df["theta_1_n"].to_numpy()
 
-        states_n_list.append(states_n)
-        theta_0_n_list.append(theta_0_n)
-        theta_1_n_list.append(theta_1_n)
 
-        plot_filename = "plots/" + filename + "_theta_0_vs_phi_0" + ".pdf"
+        plot_filename = "plots/" + filename + "_theta_0_vs_phi_0_sig="+ str(sigma) + ".pdf"
         if not os.path.exists(plot_filename):
-            plt.plot(states_u[1:], theta_0_u[1:], label = "Uniform")
+            print("2")
             plt.plot(states_n[1:], theta_0_n[1:], label = "Normal")
+            
             plt.title(r"$\alpha = 0.15$, $\sigma = 0.4$, $\tau = 0.1$, " \
-                       "$\gamma = 0.8$")
+                       "$\gamma = 0.8$, $\sd = {:.3f}$".format(sigma))
             plt.xlabel(r"$\phi_0$")
             plt.ylabel(r"Optimal $\theta_0$")
             plt.legend(loc = "upper right")
             plt.savefig(plot_filename)
             plt.close()
 
-        plot_filename = "plots/" + filename + "_theta_0_minus_theta_1" + ".pdf"
+        plot_filename = "plots/" + filename + "_theta_0_minus_theta_1_sig="+ str(sigma) + ".pdf"
         if not os.path.exists(plot_filename):
-            policy_diff_u = np.minimum(theta_1_u - theta_0_u, 0.4 - theta_0_u)
+            print("3")
             policy_diff_n = np.minimum(theta_1_n - theta_0_n, 0.4 - theta_0_n)
-            plt.plot(states_u[1:], policy_diff_u[1:], label = "Uniform")
             plt.plot(states_n[1:], policy_diff_n[1:], label = "Normal")
             plt.title(r"$\alpha = 0.15$, $\sigma = 0.4$, $\tau = 0.1$, " \
-                       "$\gamma = 0.8$")
+                       "$\gamma = 0.8$, $\sd = {:.3f}$".format(sigma))
             plt.xlabel(r"$\phi_0$")
             plt.ylabel(r"$\min ( \sigma, \theta_1 ) - \theta_0$")
             plt.legend(loc = "upper right")
