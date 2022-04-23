@@ -1,5 +1,6 @@
 # Plot optimal `theta_0` vs `phi_0` for parameters from Figure 3 and
 # `gamma = 0.8`, for both uniform and normal.
+# Also plot affirmative action (like Fig 3b).
 
 import sys
 sys.path.append("..")
@@ -73,7 +74,7 @@ def main():
         theta_1_n = df["theta_1_n"].to_numpy()
 
 
-    plot_filename = "plots/" + filename + ".pdf"
+    plot_filename = "plots/" + filename + "_theta_0_vs_phi_0" + ".pdf"
     if not os.path.exists(plot_filename):
         plt.plot(states_u[1:], theta_0_u[1:], label = "Uniform")
         plt.plot(states_n[1:], theta_0_n[1:], label = "Normal")

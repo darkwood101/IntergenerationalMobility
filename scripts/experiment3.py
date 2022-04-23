@@ -1,6 +1,5 @@
-# Plot optimal `theta_0` vs `phi_0` for parameters from Figure 3 and
-# `gamma = 0.99`, for both uniform and normal.
-# Also plot affirmative action (like Fig 3b).
+# Plot optimal `theta_0` vs `phi_0` for parameters from Figure 4 and
+# `p_A = 0.062`, for both uniform and normal.
 
 import sys
 sys.path.append("..")
@@ -31,12 +30,12 @@ def main():
     if not os.path.exists(uniform_filename):
         s_u = mdp_solver(dist = uniform_distribution(0, 1),
                          sigma = 0.4,
-                         tau = 0.1,
-                         p_A = 0,
-                         p_D = 0,
+                         tau = 0.05,
+                         p_A = 0.062,
+                         p_D = 0.02,
                          N = 2000,
                          gamma = 0.99,
-                         alpha = 0.15)
+                         alpha = 0.05)
         states_u, theta_0_u, theta_1_u = s_u.run()
 
         np.savetxt(uniform_filename,
@@ -54,12 +53,12 @@ def main():
     if not os.path.exists(normal_filename):
         s_n = mdp_solver(dist = normal_distribution(0.5, 0.05),
                          sigma = 0.4,
-                         tau = 0.1,
-                         p_A = 0,
-                         p_D = 0,
+                         tau = 0.05,
+                         p_A = 0.062,
+                         p_D = 0.02,
                          N = 2000,
                          gamma = 0.99,
-                         alpha = 0.15)
+                         alpha = 0.05)
         states_n, theta_0_n, theta_1_n = s_n.run()
 
         np.savetxt(normal_filename,
@@ -78,8 +77,8 @@ def main():
     if not os.path.exists(plot_filename):
         plt.plot(states_u[1:], theta_0_u[1:], label = "Uniform")
         plt.plot(states_n[1:], theta_0_n[1:], label = "Normal")
-        plt.title(r"$\alpha = 0.15$, $\sigma = 0.4$, $\tau = 0.1$, " \
-                   "$\gamma = 0.99$, $p_A = 0$, $p_D = 0$")
+        plt.title(r"$\alpha = 0.05$, $\sigma = 0.4$, $\tau = 0.05$, " \
+                   "$\gamma = 0.99$, $p_A = 0.062$, $p_D = 0.02$")
         plt.xlabel(r"$\phi_0$")
         plt.ylabel(r"Optimal $\theta_0$")
         plt.legend(loc = "upper right")
@@ -92,8 +91,8 @@ def main():
         policy_diff_n = np.minimum(theta_1_n - theta_0_n, 0.4 - theta_0_n)
         plt.plot(states_u[1:], policy_diff_u[1:], label = "Uniform")
         plt.plot(states_n[1:], policy_diff_n[1:], label = "Normal")
-        plt.title(r"$\alpha = 0.15$, $\sigma = 0.4$, $\tau = 0.1$, " \
-                   "$\gamma = 0.99$, $p_A = 0$, $p_D = 0$")
+        plt.title(r"$\alpha = 0.05$, $\sigma = 0.4$, $\tau = 0.05$, " \
+                   "$\gamma = 0.99$, $p_A = 0.062$, $p_D = 0.02$")
         plt.xlabel(r"$\phi_0$")
         plt.ylabel(r"$\min ( \sigma, \theta_1 ) - \theta_0$")
         plt.legend(loc = "upper right")
